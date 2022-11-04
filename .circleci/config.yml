@@ -1,0 +1,25 @@
+version: 2.1
+
+jobs:
+  sync:
+    docker:
+      - image: cimg/go:1.19.3
+    steps:
+      - checkout
+      - run: go run cmd/pagerduty-slack-sync/main.go
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - sync
+  hourly:
+    triggers:
+      - schedule:
+          cron: "0 * * * *"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - sync
