@@ -4,8 +4,6 @@ jobs:
   sync:
     docker:
       - image: cimg/go:1.19.3
-    environment:
-      CURRENT_ONCALL_GROUP_NAME_PREFIX:
     steps:
       - checkout
       - run: go run cmd/pagerduty-slack-sync/main.go

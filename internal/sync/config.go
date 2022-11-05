@@ -9,18 +9,16 @@ import (
 )
 
 const (
-	scheduleKeyPrefix                   = "SCHEDULE_"
-	pagerDutyTokenKey                   = "PAGERDUTY_TOKEN"
-	slackTokenKey                       = "SLACK_TOKEN"
-	runInterval                         = "RUN_INTERVAL_SECONDS"
-	pdScheduleLookaheadKey              = "PAGERDUTY_SCHEDULE_LOOKAHEAD"
-	runIntervalDefault                  = 60
-	syncAllOnCallGroup                  = "SYNC_ALL_ONCALL_GROUP"
-	allOnCallGroupNamePrefix            = "ALL_ONCALL_GROUP_NAME_PREFIX"
-	allOnCallGroupNamePrefixDefault     = "all-oncall-"
-	syncCurrentOnCallGroup              = "SYNC_CURRENT_ONCALL_GROUP"
-	currentOnCallGroupNamePrefix        = "CURRENT_ONCALL_GROUP_NAME_PREFIX"
-	currentOnCallGroupNamePrefixDefault = "current-oncall-"
+	scheduleKeyPrefix            = "SCHEDULE_"
+	pagerDutyTokenKey            = "PAGERDUTY_TOKEN"
+	slackTokenKey                = "SLACK_TOKEN"
+	runInterval                  = "RUN_INTERVAL_SECONDS"
+	pdScheduleLookaheadKey       = "PAGERDUTY_SCHEDULE_LOOKAHEAD"
+	runIntervalDefault           = 60
+	syncAllOnCallGroup           = "SYNC_ALL_ONCALL_GROUP"
+	allOnCallGroupNamePrefix     = "ALL_ONCALL_GROUP_NAME_PREFIX"
+	syncCurrentOnCallGroup       = "SYNC_CURRENT_ONCALL_GROUP"
+	currentOnCallGroupNamePrefix = "CURRENT_ONCALL_GROUP_NAME_PREFIX"
 )
 
 // Config is used to configure application
@@ -51,13 +49,11 @@ type Schedule struct {
 }
 
 func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		if len(value) == 0 {
-			return ""
-		}
-		return value
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
 	}
-	return fallback
+	return value
 }
 
 // NewConfigFromEnv is a function to generate a config from env varibles
@@ -70,8 +66,8 @@ func NewConfigFromEnv() (*Config, error) {
 		PagerDutyToken:               os.Getenv(pagerDutyTokenKey),
 		SlackToken:                   os.Getenv(slackTokenKey),
 		RunIntervalInSeconds:         runIntervalDefault,
-		AllOncallGroupNamePrefix:     getEnv(allOnCallGroupNamePrefix, allOnCallGroupNamePrefixDefault),
-		CurrentOncallGroupNamePrefix: getEnv(currentOnCallGroupNamePrefix, currentOnCallGroupNamePrefixDefault),
+		AllOncallGroupNamePrefix:     getEnv(allOnCallGroupNamePrefix, ""),
+		CurrentOncallGroupNamePrefix: getEnv(currentOnCallGroupNamePrefix, ""),
 		SyncAllOncallGroup:           false,
 		SyncCurrentOncallGroup:       true,
 	}
