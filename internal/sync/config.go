@@ -15,10 +15,10 @@ const (
 	runInterval                         = "RUN_INTERVAL_SECONDS"
 	pdScheduleLookaheadKey              = "PAGERDUTY_SCHEDULE_LOOKAHEAD"
 	runIntervalDefault                  = 60
-	syncAllOnCallGroupNamePrefix        = "SYNC_ALL_ONCALL_GROUP"
+	syncAllOnCallGroup                  = "SYNC_ALL_ONCALL_GROUP"
 	allOnCallGroupNamePrefix            = "ALL_ONCALL_GROUP_NAME_PREFIX"
 	allOnCallGroupNamePrefixDefault     = "all-oncall-"
-	syncCurrentOnCallGroupNamePrefix    = "SYNC_CURRENT_ONCALL_GROUP"
+	syncCurrentOnCallGroup              = "SYNC_CURRENT_ONCALL_GROUP"
 	currentOnCallGroupNamePrefix        = "CURRENT_ONCALL_GROUP_NAME_PREFIX"
 	currentOnCallGroupNamePrefixDefault = "current-oncall-"
 )
@@ -52,6 +52,9 @@ type Schedule struct {
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
+		if len(value) == 0 {
+			return ""
+		}
 		return value
 	}
 	return fallback
@@ -79,13 +82,13 @@ func NewConfigFromEnv() (*Config, error) {
 		config.RunIntervalInSeconds = v
 	}
 
-	syncAllOncallGroup := os.Getenv(syncAllOnCallGroupNamePrefix)
+	syncAllOncallGroup := os.Getenv(syncAllOnCallGroup)
 	b, err := strconv.ParseBool(syncAllOncallGroup)
 	if err == nil {
 		config.SyncAllOncallGroup = b
 	}
 
-	syncCurrentOncallGroup := os.Getenv(syncCurrentOnCallGroupNamePrefix)
+	syncCurrentOncallGroup := os.Getenv(syncCurrentOnCallGroup)
 	b, err = strconv.ParseBool(syncCurrentOncallGroup)
 	if err == nil {
 		config.SyncCurrentOncallGroup = b
