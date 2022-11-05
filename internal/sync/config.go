@@ -9,23 +9,33 @@ import (
 )
 
 const (
-	scheduleKeyPrefix      = "SCHEDULE_"
-	pagerDutyTokenKey      = "PAGERDUTY_TOKEN"
-	slackTokenKey          = "SLACK_TOKEN"
-	runInterval            = "RUN_INTERVAL_SECONDS"
-	pdScheduleLookaheadKey = "PAGERDUTY_SCHEDULE_LOOKAHEAD"
-	runIntervalDefault     = 60
+	scheduleKeyPrefix                   = "SCHEDULE_"
+	pagerDutyTokenKey                   = "PAGERDUTY_TOKEN"
+	slackTokenKey                       = "SLACK_TOKEN"
+	runInterval                         = "RUN_INTERVAL_SECONDS"
+	pdScheduleLookaheadKey              = "PAGERDUTY_SCHEDULE_LOOKAHEAD"
+	runIntervalDefault                  = 60
+	syncAllOnCallGroupNamePrefix        = "SYNC_ALL_ONCALL_GROUP"
+	allOnCallGroupNamePrefix            = "ALL_ONCALL_GROUP_NAME_PREFIX"
+	allOnCallGroupNamePrefixDefault     = "all-oncall-"
+	syncCurrentOnCallGroupNamePrefix    = "SYNC_CURRENT_ONCALL_GROUP"
+	currentOnCallGroupNamePrefix        = "CURRENT_ONCALL_GROUP_NAME_PREFIX"
+	currentOnCallGroupNamePrefixDefault = "current-oncall-"
 )
 
 // Config is used to configure application
 // PagerDutyToken - token used to connect to pagerduty API
 // SlackToken - token used to connect to Slack API
 type Config struct {
-	Schedules                  []Schedule
-	PagerDutyToken             string
-	SlackToken                 string
-	RunIntervalInSeconds       int
-	PagerdutyScheduleLookahead time.Duration
+	Schedules                    []Schedule
+	PagerDutyToken               string
+	SlackToken                   string
+	RunIntervalInSeconds         int
+	PagerdutyScheduleLookahead   time.Duration
+	AllOncallGroupNamePrefix     string
+	SyncAllOncallGroup           bool
+	CurrentOncallGroupNamePrefix string
+	SyncCurrentOncallGroup       bool
 }
 
 // Schedule models a PagerDuty schedule that will be synced with Slack
@@ -36,6 +46,15 @@ type Schedule struct {
 	ScheduleIDs            []string
 	AllOnCallGroupName     string
 	CurrentOnCallGroupName string
+	SyncAllOnCallGroup     bool
+	SyncCurrentOnCallGroup bool
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
 
 // NewConfigFromEnv is a function to generate a config from env varibles
@@ -45,15 +64,31 @@ type Schedule struct {
 // ScheduleID = "1234", AllOnCallGroupName = "all-oncall-platform-engineers", CurrentOnCallGroupName: "current-oncall-platform-engineer"
 func NewConfigFromEnv() (*Config, error) {
 	config := &Config{
-		PagerDutyToken:       os.Getenv(pagerDutyTokenKey),
-		SlackToken:           os.Getenv(slackTokenKey),
-		RunIntervalInSeconds: runIntervalDefault,
+		PagerDutyToken:               os.Getenv(pagerDutyTokenKey),
+		SlackToken:                   os.Getenv(slackTokenKey),
+		RunIntervalInSeconds:         runIntervalDefault,
+		AllOncallGroupNamePrefix:     getEnv(allOnCallGroupNamePrefix, allOnCallGroupNamePrefixDefault),
+		CurrentOncallGroupNamePrefix: getEnv(currentOnCallGroupNamePrefix, currentOnCallGroupNamePrefixDefault),
+		SyncAllOncallGroup:           false,
+		SyncCurrentOncallGroup:       true,
 	}
 
 	runInterval := os.Getenv(runInterval)
 	v, err := strconv.Atoi(runInterval)
 	if err == nil {
 		config.RunIntervalInSeconds = v
+	}
+
+	syncAllOncallGroup := os.Getenv(syncAllOnCallGroupNamePrefix)
+	b, err := strconv.ParseBool(syncAllOncallGroup)
+	if err == nil {
+		config.SyncAllOncallGroup = b
+	}
+
+	syncCurrentOncallGroup := os.Getenv(syncCurrentOnCallGroupNamePrefix)
+	b, err = strconv.ParseBool(syncCurrentOncallGroup)
+	if err == nil {
+		config.SyncCurrentOncallGroup = b
 	}
 
 	pagerdutyScheduleLookahead, err := getPagerdutyScheduleLookahead()
@@ -70,7 +105,7 @@ func NewConfigFromEnv() (*Config, error) {
 				return nil, fmt.Errorf("expecting schedule value to be a comma separated scheduleId,name but got %s", value)
 			}
 
-			config.Schedules = appendSchedule(config.Schedules, scheduleValues[0], scheduleValues[1])
+			config.Schedules = appendSchedule(config.Schedules, scheduleValues[0], scheduleValues[1], *config)
 		}
 	}
 
@@ -81,9 +116,9 @@ func NewConfigFromEnv() (*Config, error) {
 	return config, nil
 }
 
-func appendSchedule(schedules []Schedule, scheduleID, teamName string) []Schedule {
-	currentGroupName := fmt.Sprintf("current-oncall-%s", teamName)
-	allGroupName := fmt.Sprintf("all-oncall-%ss", teamName)
+func appendSchedule(schedules []Schedule, scheduleID, teamName string, config Config) []Schedule {
+	currentGroupName := fmt.Sprintf("%s%s", config.CurrentOncallGroupNamePrefix, teamName)
+	allGroupName := fmt.Sprintf("%s%ss", config.AllOncallGroupNamePrefix, teamName)
 	newScheduleList := make([]Schedule, len(schedules))
 	updated := false
 
@@ -100,6 +135,8 @@ func appendSchedule(schedules []Schedule, scheduleID, teamName string) []Schedul
 			ScheduleIDs:            append(s.ScheduleIDs, scheduleID),
 			AllOnCallGroupName:     allGroupName,
 			CurrentOnCallGroupName: currentGroupName,
+			SyncAllOnCallGroup:     config.SyncAllOncallGroup,
+			SyncCurrentOnCallGroup: config.SyncCurrentOncallGroup,
 		}
 	}
 
@@ -108,6 +145,8 @@ func appendSchedule(schedules []Schedule, scheduleID, teamName string) []Schedul
 			ScheduleIDs:            []string{scheduleID},
 			AllOnCallGroupName:     allGroupName,
 			CurrentOnCallGroupName: currentGroupName,
+			SyncAllOnCallGroup:     config.SyncAllOncallGroup,
+			SyncCurrentOnCallGroup: config.SyncCurrentOncallGroup,
 		})
 	}
 

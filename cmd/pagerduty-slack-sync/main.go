@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+func handleSync(config *sync.Config) {
+	err := sync.Schedules(config)
+	if err != nil {
+		logrus.Errorf("could not sync schedules, error: %v", err)
+		os.Exit(-1)
+		return
+	}
+}
+
 func main() {
 
 	stop := make(chan os.Signal)
@@ -23,22 +32,20 @@ func main() {
 
 	logrus.Infof("starting, going to sync %d schedules", len(config.Schedules))
 
-	timer := time.NewTicker(time.Second * time.Duration(config.RunIntervalInSeconds))
+	handleSync(config)
 
-	for alive := true; alive; {
-		select {
-		case <-stop:
-			logrus.Infof("stopping...")
-			alive = false
-			os.Exit(0)
-		case <-timer.C:
-			err = sync.Schedules(config)
-			if err != nil {
-				logrus.Errorf("could not sync schedules, error: %v", err)
-				os.Exit(-1)
-				return
+	if config.RunIntervalInSeconds > 0 {
+		timer := time.NewTicker(time.Second * time.Duration(config.RunIntervalInSeconds))
+
+		for alive := true; alive; {
+			select {
+			case <-stop:
+				logrus.Infof("stopping...")
+				alive = false
+				os.Exit(0)
+			case <-timer.C:
+				handleSync(config)
 			}
 		}
 	}
-
 }
