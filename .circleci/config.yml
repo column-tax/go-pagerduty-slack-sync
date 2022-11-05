@@ -1,12 +1,18 @@
 version: 2.1
 
+orbs:
+  go: circleci/go@1.19
+
 jobs:
   sync:
     docker:
       - image: cimg/go:1.19.3
     steps:
       - checkout
+      - go/load-cache
+      - go/mod-download
       - run: go run cmd/pagerduty-slack-sync/main.go
+      - go/save-cache
 
 workflows:
   version: 2
