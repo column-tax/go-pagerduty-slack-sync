@@ -18,7 +18,6 @@ func Schedules(config *Config) error {
 	p := newPagerDutyClient(config.PagerDutyToken)
 
 	updateSlackGroup := func(emails []string, groupName string) error {
-		logrus.Infof("updating slack group %s", groupName)
 		slackIDs, err := s.getSlackIDsFromEmails(emails)
 		if err != nil {
 			return err
@@ -61,9 +60,9 @@ func Schedules(config *Config) error {
 	}
 
 	for _, schedule := range config.Schedules {
-		logrus.Infof("checking slack group: %s", schedule.CurrentOnCallGroupName)
 
 		if schedule.SyncCurrentOnCallGroup {
+			logrus.Infof("checking slack group: %s", schedule.CurrentOnCallGroupName)
 			currentOncallEngineerEmails, err := getEmailsForSchedules(schedule.ScheduleIDs, time.Second)
 			if err != nil {
 				logrus.Errorf("failed to get emails for %s: %v", schedule.CurrentOnCallGroupName, err)
@@ -76,10 +75,11 @@ func Schedules(config *Config) error {
 				continue
 			}
 
-			logrus.Infof("checking slack group: %s", schedule.AllOnCallGroupName)
 		}
 
 		if schedule.SyncAllOnCallGroup {
+			logrus.Infof("checking slack group: %s", schedule.AllOnCallGroupName)
+
 			allOncallEngineerEmails, err := getEmailsForSchedules(schedule.ScheduleIDs, config.PagerdutyScheduleLookahead)
 			if err != nil {
 				logrus.Errorf("failed to get emails for %s: %v", schedule.AllOnCallGroupName, err)
