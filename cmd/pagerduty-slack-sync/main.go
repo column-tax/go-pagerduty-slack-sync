@@ -12,7 +12,7 @@ import (
 func handleSync(config *sync.Config) {
 	err := sync.Schedules(config)
 	if err != nil {
-		logrus.Errorf("could not sync schedules, error: %v", err)
+		logrus.Errorf("Could not sync schedules, error: %v", err)
 		os.Exit(-1)
 		return
 	}
@@ -25,12 +25,12 @@ func main() {
 
 	config, err := sync.NewConfigFromEnv()
 	if err != nil {
-		logrus.Errorf("could not parse config, error: %v", err)
+		logrus.Errorf("Could not parse config, error: %v", err)
 		os.Exit(-1)
 		return
 	}
 
-	logrus.Infof("starting, going to sync %d schedules", len(config.Schedules))
+	logrus.Infof("Starting, going to sync %d schedules", len(config.Schedules))
 
 	handleSync(config)
 
@@ -40,7 +40,7 @@ func main() {
 		for alive := true; alive; {
 			select {
 			case <-stop:
-				logrus.Infof("stopping...")
+				logrus.Infof("Stopping...")
 				alive = false
 				os.Exit(0)
 			case <-timer.C:

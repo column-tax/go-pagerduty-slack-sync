@@ -32,15 +32,15 @@ func newSlackClient(token string) (*slackClient, error) {
 	}, nil
 }
 
-func (s *slackClient) createOrGetUserGroup(name string) (*slack.UserGroup, error) {
-	group := s.findUserGroupByName(name)
+func (s *slackClient) createOrGetUserGroup(handle string) (*slack.UserGroup, error) {
+	group := s.findUserGroupByHandle(handle)
 	if group != nil {
 		return group, nil
 	}
 
 	g, err := s.Client.CreateUserGroup(slack.UserGroup{
-		Name:   name,
-		Handle: name,
+		Name:   handle,
+		Handle: handle,
 	})
 	if err != nil {
 		return nil, err
@@ -70,9 +70,9 @@ func (s *slackClient) findUserIDByEmail(email string) *string {
 	return nil
 }
 
-func (s *slackClient) findUserGroupByName(name string) *slack.UserGroup {
+func (s *slackClient) findUserGroupByHandle(handle string) *slack.UserGroup {
 	for _, g := range s.userGroups {
-		if strings.EqualFold(name, g.Name) {
+		if strings.EqualFold(handle, g.Handle) {
 			return &g
 		}
 	}
